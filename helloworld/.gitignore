@@ -1,0 +1,7 @@
+**/.gradle
+**/.idea/*
+**/*.jar
+**/*.tar.gz
+**/.DS_Store
+**/.vscode
+!**/gradle/wrapper/gradle-wrapper.jar
