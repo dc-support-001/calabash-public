@@ -1,0 +1,9 @@
+**/.gradle
+**/.idea
+**/build
+**/out
+**/*.jar
+**/*.tar.gz
+**/.DS_Store
+**/.vscode
+**/*_security
