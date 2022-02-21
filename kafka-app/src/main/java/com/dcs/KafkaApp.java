@@ -8,7 +8,9 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.Collections;
@@ -22,7 +24,7 @@ public class KafkaApp {
   private static final String DEMO_TARGET_TOPIC = "topic2";
 
   private static final int SOURCE_POLL_TIMEOUT = 10;          // in hours
-  private static final int TARGET_STATUS_TIMEOUT = 30;          // in sec
+  private static final int TARGET_STATUS_TIMEOUT = 30;        // in sec
 
   private static String consumerConfigFile;
   private static String producerConfigFile;
@@ -30,14 +32,46 @@ public class KafkaApp {
   private static Producer<String, String> producer = null;
 
   public static void main(String... args) {
-    if (args.length != 2) {
-      System.out.println("Usage: java -jar kafka-app-VERSION.jar PRODUCER CONSUMER");
-      System.out.println("CONSUMER is a Kafka consumer username.");
-      System.out.println("PRODUCER is a Kafka producer username.");
-      System.exit(0);
+    // get the init.properties file
+    String initPropertiesFileName = null;
+    if (new File("/data/init.properties").exists()) {
+      initPropertiesFileName = "/data/init.properties";
+    } else if (new File("/secret/init.properties").exists()) {
+      initPropertiesFileName = "/secret/init.properties";
     }
-    consumerConfigFile = "/data/properties/consumer_" + args[0] + ".properties";
-    producerConfigFile = "/data/properties/producer_" + args[1] + ".properties";
+    if (initPropertiesFileName == null) {
+      System.out.println("Error: cannot find init.properties file.");
+      System.exit(1);
+    }
+
+    // get producerUsers and consumerUsers from the init.properties file
+    Properties props = new Properties();
+    try {
+      props.load(new FileInputStream(initPropertiesFileName));
+    } catch (IOException e) {
+      System.out.println("Failed loading init.properties file");
+      System.exit(1);
+    }
+
+    String consumerUsers = props.getProperty("consumerUsers");
+    String producerUsers = props.getProperty("producerUsers");
+
+    if (consumerUsers == null || consumerUsers.isEmpty()) {
+      System.out.println("Error: no consumer user");
+      System.exit(1);
+    }
+
+    if (producerUsers == null || producerUsers.isEmpty()) {
+      System.out.println("Error: no producer user");
+      System.exit(1);
+    }
+
+    // use the first consumer/producer user
+    String consumerUser = consumerUsers.split(",")[0];
+    String producerUser = producerUsers.split((","))[0];
+
+    consumerConfigFile = "/data/properties/consumer_" + consumerUser + ".properties";
+    producerConfigFile = "/data/properties/producer_" + producerUser + ".properties";
     getConsumer();
     getProducer();
     while (true) {
